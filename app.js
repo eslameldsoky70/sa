@@ -130,8 +130,17 @@ function parseProduct(req) {
   const error = !data.name ? 'اسم المنتج مطلوب.' : !(price > 0) ? 'السعر غير صحيح.' : '';
   return { data, error };
 }
+// رسالة خطأ الرفع (تظهر للأدمن فقط) + تسجيل السبب الحقيقي في Vercel Logs
+function uploadErrorMessage(e) {
+  if (e.code === 'BAD_TYPE') return 'الملف ليس صورة JPG أو PNG أو WebP صالحة.';
+  console.error('[blob] فشل رفع الصورة:', e.name, '-', e.message);
+  return `تعذر رفع الصورة. السبب: ${String(e.message || e.name).slice(0, 200)}`;
+}
 const withUpload = (req, res, next) => upload(req, res, (err) => {
-  if (err) { req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'حجم الصورة أكبر من 4MB.' : 'تعذر رفع الصورة.'; }
+  if (err) {
+    if (err.code !== 'LIMIT_FILE_SIZE') console.error('[upload] multer:', err.code, err.message);
+    req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'حجم الصورة أكبر من 4MB.' : 'تعذر رفع الصورة.';
+  }
   next();
 });
 
@@ -143,7 +152,7 @@ admin.post('/products', withUpload, wrap(async (req, res) => {
   let image = '';
   if (req.file) {
     try { image = await uploadImage(req.file); }
-    catch (e) { return res.status(400).send(v.adminProductForm(data, e.code === 'BAD_TYPE' ? 'الملف ليس صورة JPG أو PNG أو WebP صالحة.' : 'تعذر رفع الصورة.')); }
+    catch (e) { return res.status(400).send(v.adminProductForm(data, uploadErrorMessage(e))); }
   }
   try {
     await db.run('INSERT INTO products (name, price, description, image, available) VALUES (?, ?, ?, ?, ?)',
@@ -163,7 +172,7 @@ admin.post('/products/:id', withUpload, wrap(async (req, res) => {
   let image = old.image;
   if (req.file) {
     try { image = await uploadImage(req.file); }
-    catch (e) { return res.status(400).send(v.adminProductForm({ ...old, ...data }, e.code === 'BAD_TYPE' ? 'الملف ليس صورة JPG أو PNG أو WebP صالحة.' : 'تعذر رفع الصورة.')); }
+    catch (e) { return res.status(400).send(v.adminProductForm({ ...old, ...data }, uploadErrorMessage(e))); }
   }
   try {
     await db.run('UPDATE products SET name=?, price=?, description=?, available=?, image=? WHERE id=?',
