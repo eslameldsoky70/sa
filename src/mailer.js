@@ -42,6 +42,15 @@ function getTransport() {
 async function sendOrderEmail(order, items) {
   const to = process.env.ADMIN_EMAIL;
   const transport = getTransport();
+  
+  console.log('[email config]', {
+  ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
+  EMAIL_USER: !!process.env.EMAIL_USER,
+  EMAIL_PASSWORD: !!process.env.EMAIL_PASSWORD,
+  EMAIL_HOST: !!process.env.EMAIL_HOST,
+  EMAIL_PORT: !!process.env.EMAIL_PORT
+});
+  
   if (!to || !transport) {
     console.warn(`[email] لم يتم الإرسال للطلب #${order.id}: ADMIN_EMAIL أو بيانات البريد غير مضبوطة.`);
     return false;
