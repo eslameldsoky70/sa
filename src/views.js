@@ -11,15 +11,15 @@ const GOVS = ['القاهرة','الجيزة','الإسكندرية','الدقه
 const head = (title) => `<!doctype html><html lang="ar" dir="rtl" data-cur="${esc(CUR)}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@300;400;500&family=Noto+Naskh+Arabic:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css"></head>`;
 
 function layout(title, body) {
   return `${head(`${title} | ${BRAND}`)}<body>
-<header class="site-header"><div class="wrap bar">
+<header class="site-header"><div class="wrap bar bar-store">
+  <nav class="nav-main"><a href="/">الرئيسية</a><a href="/products">الساعات</a></nav>
   <a class="logo" href="/">${esc(BRAND)}</a>
-  <nav><a href="/">الرئيسية</a><a href="/products">الساعات</a>
-  <a href="/cart" class="cart-link">السلة <span class="badge" data-cart-count hidden>0</span></a></nav>
+  <a href="/cart" class="cart-link">السلة <span class="badge" data-cart-count hidden>0</span></a>
 </div></header>
 <main>${body}</main>
 <footer class="site-footer"><div class="wrap"><span class="logo sm">${esc(BRAND)}</span><span>الدفع عند الاستلام · © ${new Date().getFullYear()}</span></div></footer>
@@ -37,9 +37,8 @@ function adminLayout(title, body) {
 
 const card = (p) => `<article class="card">
   <a href="/product/${p.id}" class="card-img"><img src="${imgUrl(p)}" alt="${esc(p.name)}" loading="lazy"></a>
-  <div class="card-body"><h3>${esc(p.name)}</h3><p class="price">${money(p.price)}</p>
-  <div class="card-actions"><a class="btn ghost" href="/product/${p.id}">عرض التفاصيل</a>
-  ${p.available ? `<button class="btn" data-add="${p.id}">أضف إلى السلة</button>` : `<span class="btn disabled">غير متوفر</span>`}</div></div></article>`;
+  <div class="card-body"><h3><a href="/product/${p.id}">${esc(p.name)}</a></h3><p class="price">${money(p.price)}</p>
+  ${p.available ? `<button class="add" data-add="${p.id}">أضف إلى السلة</button>` : `<span class="soldout">غير متوفر</span>`}</div></article>`;
 
 const empty = (msg) => `<p class="empty">${msg}</p>`;
 
@@ -47,7 +46,7 @@ const home = (products) => layout('الرئيسية', `
 <section class="hero"><div class="wrap hero-grid">
   <div><h1>الوقت يليق<br>بمن يقدّره</h1><p>ساعات مختارة بعناية، بتصميم هادئ وتفاصيل متقنة.</p>
   <a class="btn gold" href="/products">تسوق الآن</a></div>
-  <img src="/img/hero-watch.svg" alt="ساعة ${esc(BRAND)}" class="hero-img">
+  ${products[0] ? `<a href="/product/${products[0].id}"><img src="${imgUrl(products[0])}" alt="${esc(products[0].name)}" class="hero-img"></a>` : `<img src="/img/hero-watch.svg" alt="ساعة ${esc(BRAND)}" class="hero-img">`}
 </div></section>
 <section class="wrap section"><h2>الساعات</h2>
 ${products.length ? `<div class="grid">${products.map(card).join('')}</div>` : empty('لا توجد منتجات حاليًا.')}
@@ -61,7 +60,7 @@ const productPage = (p) => layout(p.name, `<section class="wrap section detail">
   <div><h1>${esc(p.name)}</h1><p class="price big">${money(p.price)}</p>
   <p class="desc">${esc(p.description).replace(/\n/g, '<br>')}</p>
   ${p.available ? `<label class="qty">الكمية <input id="qty" type="number" min="1" max="99" value="1"></label>
-  <button class="btn gold" data-add="${p.id}">Add to Cart</button>` : `<span class="btn disabled">غير متوفر حاليًا</span>`}
+  <button class="btn gold" data-add="${p.id}">أضف إلى السلة</button>` : `<span class="btn disabled">غير متوفر حاليًا</span>`}
   </div></section>`);
 
 const cartPage = () => layout('السلة', `<section class="wrap section"><h2>سلة المشتريات</h2>
