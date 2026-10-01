@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const db = require('./src/db');
 const auth = require('./src/auth');
-const { sendOrderEmail } = require('./src/mailer');
+const { sendOrderEmail, sendSubscriberEmail } = require('./src/mailer');
 const { uploadImage, removeImage } = require('./src/blob');
 const v = require('./src/views');
 
@@ -32,7 +32,20 @@ const upload = multer({
 const listProducts = () => db.all('SELECT * FROM products ORDER BY id DESC');
 const getProduct = (id) => db.get('SELECT * FROM products WHERE id = ?', [id]);
 
-app.get('/', wrap(async (req, res) => res.send(v.home((await listProducts()).slice(0, 8)))));
+app.get('/', wrap(async (req, res) => {
+  const all = await listProducts();
+  // الأكثر طلبًا: حسب الكميات المباعة فعليًا، ثم الأحدث
+  const best = await db.all(`SELECT p.* FROM products p
+    LEFT JOIN (SELECT product_id, SUM(quantity) AS q FROM order_items GROUP BY product_id) s ON s.product_id = p.id
+    WHERE p.available = 1 ORDER BY COALESCE(s.q, 0) DESC, p.id DESC LIMIT 4`);
+  res.send(v.home(all.slice(0, 3), best, all.length));
+}));
+app.post('/newsletter', wrap(async (req, res) => {
+  const email = String(req.body.email || '').trim().slice(0, 120);
+  if (!req.body.website && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) await sendSubscriberEmail(email);
+  res.redirect('/subscribed');
+}));
+app.get('/subscribed', (req, res) => res.send(v.subscribedPage()));
 app.get('/products', wrap(async (req, res) => res.send(v.productsPage(await listProducts()))));
 app.get('/product/:id', wrap(async (req, res) => {
   const p = await getProduct(Number(req.params.id));
