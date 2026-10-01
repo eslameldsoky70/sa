@@ -130,6 +130,23 @@ admin.use(auth.requireAdmin);
 app.use('/admin', admin);
 
 admin.get('/', (req, res) => res.redirect('/admin/orders'));
+admin.get('/account', (req, res) => res.send(v.adminAccount(req.adminUser)));
+admin.post('/account', wrap(async (req, res) => {
+  const me = await db.get('SELECT * FROM admins WHERE username = ?', [req.adminUser]);
+  const username = clean(req.body.username, 40);
+  const pw = String(req.body.password || ''), confirm = String(req.body.confirm || '');
+  const show = (msg, code = 400) => res.status(code).send(v.adminAccount(username || me.username, msg));
+  if (!auth.loginAllowed(req.ip)) return show('محاولات كثيرة. حاول بعد 15 دقيقة.', 429);
+  if (!auth.verifyPassword(String(req.body.current || ''), me.password_hash)) { auth.loginFailed(req.ip); return show('كلمة المرور الحالية غير صحيحة.'); }
+  if (!/^[^\s|]{3,40}$/.test(username)) return show('اسم المستخدم من 3 إلى 40 حرفًا بدون مسافات.');
+  if (pw && pw.length < 8) return show('كلمة المرور الجديدة 8 أحرف على الأقل.');
+  if (pw !== confirm) return show('تأكيد كلمة المرور غير مطابق.');
+  if (await db.get('SELECT 1 AS x FROM admins WHERE username = ? AND id != ?', [username, me.id])) return show('اسم المستخدم مستخدم بالفعل.');
+  await db.run('UPDATE admins SET username = ?, password_hash = ? WHERE id = ?', [username, pw ? auth.hashPassword(pw) : me.password_hash, me.id]);
+  auth.setSession(res, username); // الجلسة مرتبطة باسم المستخدم، فنجددها
+  res.send(v.adminAccount(username, '', 'تم حفظ التغييرات بنجاح.'));
+}));
+
 admin.get('/products', wrap(async (req, res) => res.send(v.adminProducts(await listProducts()))));
 admin.get('/products/new', (req, res) => res.send(v.adminProductForm()));
 admin.get('/products/:id/edit', wrap(async (req, res) => {
