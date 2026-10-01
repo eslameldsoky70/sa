@@ -1,5 +1,5 @@
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const BRAND = process.env.BRAND_NAME || 'AURUM';
+const BRAND = process.env.BRAND_NAME || 'raqi';
 const CUR = process.env.CURRENCY || 'ج.م';
 const money = (n) => `${Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${CUR}`;
 // الصورة الآن رابط كامل على Vercel Blob
@@ -11,18 +11,30 @@ const GOVS = ['القاهرة','الجيزة','الإسكندرية','الدقه
 const head = (title) => `<!doctype html><html lang="ar" dir="rtl" data-cur="${esc(CUR)}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@300;400;500&family=Noto+Naskh+Arabic:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css"></head>`;
 
 function layout(title, body) {
+  const mail = process.env.CONTACT_EMAIL, tel = process.env.CONTACT_PHONE;
   return `${head(`${title} | ${BRAND}`)}<body>
 <header class="site-header"><div class="wrap bar bar-store">
-  <nav class="nav-main"><a href="/">الرئيسية</a><a href="/products">الساعات</a></nav>
   <a class="logo" href="/">${esc(BRAND)}</a>
-  <a href="/cart" class="cart-link">السلة <span class="badge" data-cart-count hidden>0</span></a>
+  <nav class="nav-main"><a href="/">الرئيسية</a><a href="/products">الساعات</a><a href="/#collection">المجموعات</a><a href="/#story">عن راقي</a></nav>
+  <a href="/cart" class="cart-link" aria-label="السلة"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="badge" data-cart-count hidden>0</span></a>
 </div></header>
 <main>${body}</main>
-<footer class="site-footer"><div class="wrap"><span class="logo sm">${esc(BRAND)}</span><span>الدفع عند الاستلام · © ${new Date().getFullYear()}</span></div></footer>
+<footer class="site-footer"><div class="wrap">
+  <form class="news" id="newsletter" method="post" action="/newsletter"><div><h3>اشترك للحصول على آخر إصدارات راقي</h3></div>
+    <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div class="news-row"><input type="email" name="email" required maxlength="120" placeholder="بريدك الإلكتروني" aria-label="البريد الإلكتروني"><button class="btn">اشتراك</button></div></form>
+  <div class="foot-cols">
+    <div><span class="logo sm">${esc(BRAND)}</span><p>ساعات مختارة بعناية، بتصميم هادئ وتفاصيل متقنة.</p></div>
+    <div><h4>التسوق</h4><a href="/products">جميع الساعات</a><a href="/#collection">المجموعة المختارة</a><a href="/#best">الأكثر طلبًا</a><a href="/cart">السلة</a></div>
+    <div><h4>المساعدة</h4><a href="/checkout">إتمام الطلب</a><a href="/#story">عن راقي</a><p>الدفع عند الاستلام.</p></div>
+    <div><h4>تواصل معنا</h4>${mail ? `<a href="mailto:${esc(mail)}">${esc(mail)}</a>` : ''}${tel ? `<a href="tel:${esc(tel)}" dir="ltr">${esc(tel)}</a>` : ''}${mail || tel ? '' : '<p>سنتواصل معك هاتفيًا بعد تأكيد طلبك.</p>'}</div>
+  </div>
+  <div class="foot-bottom"><span>© ${new Date().getFullYear()} ${esc(BRAND)}</span><span>الدفع عند الاستلام</span></div>
+</div></footer>
 <script src="/js/cart.js"></script></body></html>`;
 }
 
@@ -35,32 +47,47 @@ function adminLayout(title, body) {
 </div></header><main class="wrap page">${body}</main></body></html>`;
 }
 
+const snip = (t, n = 90) => { const x = String(t || '').replace(/\s+/g, ' ').trim(); return x.length > n ? x.slice(0, n) + '…' : x; };
 const card = (p) => `<article class="card">
   <a href="/product/${p.id}" class="card-img"><img src="${imgUrl(p)}" alt="${esc(p.name)}" loading="lazy"></a>
-  <div class="card-body"><h3><a href="/product/${p.id}">${esc(p.name)}</a></h3><p class="price">${money(p.price)}</p>
-  ${p.available ? `<button class="add" data-add="${p.id}">أضف إلى السلة</button>` : `<span class="soldout">غير متوفر</span>`}</div></article>`;
+  <div class="card-body"><h3><a href="/product/${p.id}">${esc(p.name)}</a></h3>
+  ${p.description ? `<p class="snip">${esc(snip(p.description))}</p>` : ''}<p class="price">${money(p.price)}</p>
+  <div class="card-actions"><a class="more-link" href="/product/${p.id}">عرض التفاصيل</a>
+  ${p.available ? `<button class="btn outline sm" data-add="${p.id}">أضف إلى السلة</button>` : `<span class="soldout">غير متوفر</span>`}</div></div></article>`;
 
 const empty = (msg) => `<p class="empty">${msg}</p>`;
 
-const home = (products) => layout('الرئيسية', `
+const home = (featured, best = [], total = 0) => layout('الرئيسية', `
 <section class="hero"><div class="wrap hero-grid">
-  <div><h1>الوقت يليق<br>بمن يقدّره</h1><p>ساعات مختارة بعناية، بتصميم هادئ وتفاصيل متقنة.</p>
-  <a class="btn gold" href="/products">تسوق الآن</a></div>
-  ${products[0] ? `<a href="/product/${products[0].id}"><img src="${imgUrl(products[0])}" alt="${esc(products[0].name)}" class="hero-img"></a>` : `<img src="/img/hero-watch.svg" alt="ساعة ${esc(BRAND)}" class="hero-img">`}
+  <div class="hero-text"><h1>الوقت يليق<br>بمن يقدّره</h1><p>ساعات مختارة بعناية، بتصميم هادئ وتفاصيل متقنة.</p>
+  <a class="btn lg" href="/products">اكتشف المجموعة</a></div>
+  ${featured[0] ? `<a href="/product/${featured[0].id}" class="hero-media"><img src="${imgUrl(featured[0])}" alt="${esc(featured[0].name)}" class="hero-img"></a>` : `<div class="hero-media"><img src="/img/hero-watch.svg" alt="ساعة ${esc(BRAND)}" class="hero-img"></div>`}
 </div></section>
-<section class="wrap section"><h2>الساعات</h2>
-${products.length ? `<div class="grid">${products.map(card).join('')}</div>` : empty('لا توجد منتجات حاليًا.')}
-</section>`);
+<section class="wrap section" id="collection"><div class="sec-head"><h2>المجموعة المختارة</h2><a class="more-link" href="/products">عرض الكل</a></div>
+${featured.length ? `<div class="grid g3">${featured.map(card).join('')}</div>` : empty('لا توجد منتجات حاليًا.')}</section>
+<section class="banner" aria-label="تفاصيل تصنع الفرق"><div class="wrap"><div class="banner-box"><h2>تفاصيل تصنع الفرق</h2><a class="btn" href="/products">تصفح الساعات</a></div></div></section>
+${total >= 4 && best.length ? `<section class="wrap section" id="best"><div class="sec-head"><h2>الأكثر طلبًا</h2></div><div class="grid g4">${best.map(card).join('')}</div></section>` : ''}
+<section class="wrap section story" id="story"><div class="story-img" role="img" aria-label="${esc(BRAND)}"></div>
+  <div class="story-text"><span class="eyebrow">عن ${esc(BRAND === 'raqi' ? 'راقي' : BRAND)}</span><h2>صُممت لتبقى</h2>
+  <p>في راقي نؤمن أن أجمل الساعات هي التي لا تحتاج إلى تعريف. نبدأ من البساطة، ونختار كل تفصيلة بعناية، ونُعلي من قيمة الصنعة، لنقدّم تصميمًا لا يرتبط بموسم ولا بموضة.</p>
+  <dl><div><dt>البساطة</dt><dd>خطوط نظيفة بلا زخرفة زائدة.</dd></div><div><dt>الصنعة</dt><dd>عناية بكل قطعة من الفكرة حتى التسليم.</dd></div>
+  <div><dt>تصميم خالد</dt><dd>ساعة تبقى أنيقة عامًا بعد عام.</dd></div><div><dt>الاهتمام بالتفاصيل</dt><dd>الفرق الحقيقي يظهر في التفاصيل الصغيرة.</dd></div></dl></div></section>`);
+
+const subscribedPage = () => layout('شكرًا لك', `<section class="wrap section narrow center"><h1>شكرًا لاشتراكك</h1><p class="desc">سنوافيك بآخر إصدارات ${esc(BRAND)}.</p><a class="btn" href="/">العودة للرئيسية</a></section>`);
 
 const productsPage = (products) => layout('الساعات', `<section class="wrap section"><h2>جميع الساعات</h2>
 ${products.length ? `<div class="grid">${products.map(card).join('')}</div>` : empty('لا توجد منتجات حاليًا.')}</section>`);
 
 const productPage = (p) => layout(p.name, `<section class="wrap section detail">
-  <img src="${imgUrl(p)}" alt="${esc(p.name)}" class="detail-img">
-  <div><h1>${esc(p.name)}</h1><p class="price big">${money(p.price)}</p>
-  <p class="desc">${esc(p.description).replace(/\n/g, '<br>')}</p>
+  <div class="detail-media"><img src="${imgUrl(p)}" alt="${esc(p.name)}" class="detail-img"></div>
+  <div class="detail-info"><nav class="crumbs"><a href="/">الرئيسية</a> / <a href="/products">الساعات</a></nav>
+  <h1>${esc(p.name)}</h1><p class="price big">${money(p.price)}</p>
   ${p.available ? `<label class="qty">الكمية <input id="qty" type="number" min="1" max="99" value="1"></label>
-  <button class="btn gold" data-add="${p.id}">أضف إلى السلة</button>` : `<span class="btn disabled">غير متوفر حاليًا</span>`}
+  <button class="btn lg block" data-add="${p.id}">أضف إلى السلة</button>` : `<span class="btn disabled block">غير متوفر حاليًا</span>`}
+  <ul class="perks"><li>الدفع عند الاستلام</li><li>نتواصل معك لتأكيد الطلب قبل الشحن</li></ul>
+  <details class="acc" open><summary>التفاصيل</summary><p>${esc(p.description || 'لا توجد تفاصيل إضافية.').replace(/\n/g, '<br>')}</p></details>
+  <details class="acc"><summary>الخامات والعناية</summary><p>للحفاظ على مظهر الساعة، تجنّب الصدمات والمواد الكيميائية وامسحها بقطعة قماش ناعمة وجافة.</p></details>
+  <details class="acc"><summary>الشحن والدفع</summary><p>الدفع عند الاستلام. بعد تأكيد الطلب سنتواصل معك هاتفيًا لتأكيد العنوان وموعد التسليم.</p></details>
   </div></section>`);
 
 const cartPage = () => layout('السلة', `<section class="wrap section"><h2>سلة المشتريات</h2>
@@ -129,4 +156,4 @@ ${o.email_sent ? '' : '<span class="tag warn">لم يُرسل البريد</span
 ${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${k === o.status ? 'selected' : ''}>${v}</option>`).join('')}</select>
 <button class="btn sm">تحديث الحالة</button></form></article>`).join('') : empty('لا توجد طلبات بعد.')}`);
 
-module.exports = { STATUS, home, productsPage, productPage, cartPage, checkoutPage, successPage, notFound, adminLogin, adminProducts, adminProductForm, adminOrders };
+module.exports = { STATUS, subscribedPage, home, productsPage, productPage, cartPage, checkoutPage, successPage, notFound, adminLogin, adminProducts, adminProductForm, adminOrders };
