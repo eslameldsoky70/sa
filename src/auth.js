@@ -51,7 +51,7 @@ function setSession(res, username) {
 async function requireAdmin(req, res, next) {
   try {
     const user = readToken(cookies(req).admin);
-    if (user && (await db.get('SELECT 1 AS ok FROM admins WHERE username = ?', [user]))) return next();
+    if (user && (await db.get('SELECT 1 AS ok FROM admins WHERE username = ?', [user]))) { req.adminUser = user; return next(); }
     res.redirect('/admin/login');
   } catch (err) { next(err); }
 }

@@ -42,7 +42,7 @@ function adminLayout(title, body) {
   return `${head(`${title} | لوحة التحكم`)}<body class="admin">
 <header class="site-header"><div class="wrap bar">
   <a class="logo" href="/admin/orders">لوحة التحكم</a>
-  <nav><a href="/admin/orders">الطلبات</a><a href="/admin/products">المنتجات</a><a href="/" target="_blank">المتجر</a>
+  <nav><a href="/admin/orders">الطلبات</a><a href="/admin/products">المنتجات</a><a href="/admin/account">حسابي</a><a href="/" target="_blank">المتجر</a>
   <form method="post" action="/admin/logout" class="inline"><button class="link">خروج</button></form></nav>
 </div></header><main class="wrap page">${body}</main></body></html>`;
 }
@@ -127,6 +127,15 @@ ${error ? `<p class="alert">${esc(error)}</p>` : ''}
 <label>كلمة المرور<input name="password" type="password" required autocomplete="current-password"></label>
 <button class="btn gold block">دخول</button></form></main></body></html>`;
 
+const adminAccount = (username, error = '', ok = '') => adminLayout('حسابي', `<h2>إعدادات حساب الأدمن</h2>
+${error ? `<p class="alert">${esc(error)}</p>` : ''}${ok ? `<p class="ok">${esc(ok)}</p>` : ''}
+<form method="post" action="/admin/account" class="form narrow">
+<label>اسم المستخدم<input name="username" required minlength="3" maxlength="40" autocomplete="username" value="${esc(username)}"></label>
+<label>كلمة المرور الجديدة (اتركها فارغة لعدم تغييرها)<input name="password" type="password" minlength="8" autocomplete="new-password"></label>
+<label>تأكيد كلمة المرور الجديدة<input name="confirm" type="password" autocomplete="new-password"></label>
+<label>كلمة المرور الحالية (مطلوبة لحفظ أي تغيير)<input name="current" type="password" required autocomplete="current-password"></label>
+<button class="btn gold">حفظ التغييرات</button></form>`);
+
 const adminProducts = (list) => adminLayout('المنتجات', `<div class="toolbar"><h2>المنتجات</h2><a class="btn gold" href="/admin/products/new">إضافة منتج</a></div>
 ${list.length ? `<div class="table-wrap"><table><thead><tr><th></th><th>الاسم</th><th>السعر</th><th>الحالة</th><th></th></tr></thead><tbody>
 ${list.map((p) => `<tr><td><img class="thumb" src="${imgUrl(p)}" alt=""></td><td>${esc(p.name)}</td><td>${money(p.price)}</td>
@@ -156,4 +165,4 @@ ${o.email_sent ? '' : '<span class="tag warn">لم يُرسل البريد</span
 ${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${k === o.status ? 'selected' : ''}>${v}</option>`).join('')}</select>
 <button class="btn sm">تحديث الحالة</button></form></article>`).join('') : empty('لا توجد طلبات بعد.')}`);
 
-module.exports = { STATUS, subscribedPage, home, productsPage, productPage, cartPage, checkoutPage, successPage, notFound, adminLogin, adminProducts, adminProductForm, adminOrders };
+module.exports = { STATUS, subscribedPage, home, productsPage, productPage, cartPage, checkoutPage, successPage, notFound, adminLogin, adminAccount, adminProducts, adminProductForm, adminOrders };
