@@ -42,15 +42,6 @@ function getTransport() {
 async function sendOrderEmail(order, items) {
   const to = process.env.ADMIN_EMAIL;
   const transport = getTransport();
-  
-  console.log('[email config]', {
-  ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
-  EMAIL_USER: !!process.env.EMAIL_USER,
-  EMAIL_PASSWORD: !!process.env.EMAIL_PASSWORD,
-  EMAIL_HOST: !!process.env.EMAIL_HOST,
-  EMAIL_PORT: !!process.env.EMAIL_PORT
-});
-  
   if (!to || !transport) {
     console.warn(`[email] لم يتم الإرسال للطلب #${order.id}: ADMIN_EMAIL أو بيانات البريد غير مضبوطة.`);
     return false;
@@ -70,4 +61,18 @@ async function sendOrderEmail(order, items) {
   }
 }
 
-module.exports = { sendOrderEmail };
+// إشعار اشتراك النشرة البريدية يصل إلى ADMIN_EMAIL (لا حاجة لجدول جديد)
+async function sendSubscriberEmail(email) {
+  const to = process.env.ADMIN_EMAIL;
+  const transport = getTransport();
+  if (!to || !transport) return false;
+  try {
+    await transport.sendMail({ from: process.env.EMAIL_USER || to, to, subject: 'اشتراك جديد في النشرة البريدية', text: `بريد المشترك: ${email}` });
+    return true;
+  } catch (err) {
+    console.error('[email] فشل إشعار الاشتراك:', err.message);
+    return false;
+  }
+}
+
+module.exports = { sendOrderEmail, sendSubscriberEmail };
